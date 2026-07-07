@@ -63,6 +63,21 @@ describe("createAutopostClient", () => {
     expect(stub.calls[0]!.init?.method).toBe("GET");
     const headers = stub.calls[0]!.init?.headers as Record<string, string>;
     expect(headers.authorization).toBe("Bearer crp_test");
+    expect(headers["content-type"]).toBeUndefined();
+  });
+
+  it("post() includes content-type header", async () => {
+    const stub = stubFetch({
+      body: { post_id: "p-1", platform_post_id: "x-1", web_url: "https://x.com/1" },
+    });
+    const client = createAutopostClient({
+      token: "crp_test",
+      baseUrl: "https://example.test",
+      fetch: stub.fetch,
+    });
+    await client.post({ accountId: "acc-1", text: "hi" });
+    const headers = stub.calls[0]!.init?.headers as Record<string, string>;
+    expect(headers["content-type"]).toBe("application/json");
   });
 
   it("strips trailing slashes from baseUrl", async () => {
