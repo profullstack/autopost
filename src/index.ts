@@ -103,15 +103,17 @@ export function createAutopostClient(
       "autopost: no fetch implementation available (Node 18+ provides one)",
     );
   }
-  const baseHeaders = {
-    authorization: `Bearer ${options.token}`,
-    "content-type": "application/json",
-  };
+  const authHeader = { authorization: `Bearer ${options.token}` };
 
   async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
+    const hasBody = init.body != null;
     const res = await fetchImpl(`${baseUrl}${path}`, {
       ...init,
-      headers: { ...baseHeaders, ...(init.headers ?? {}) },
+      headers: {
+        ...authHeader,
+        ...(hasBody ? { "content-type": "application/json" } : {}),
+        ...(init.headers ?? {}),
+      },
     });
     let body: unknown = null;
     try {
