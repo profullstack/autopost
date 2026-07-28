@@ -101,11 +101,11 @@ try {
 
 Returns `{ listAccounts, post }`.
 
-### `listAccounts(): Promise<SocialAccount[]>`
+### `listAccounts(options?): Promise<SocialAccount[]>`
 
 Returns the user's connected social accounts. `instance_url` is non-null only for federated platforms (Mastodon today).
 
-### `post(input): Promise<PostResult>`
+### `post(input, options?): Promise<PostResult>`
 
 | Field       | Type     | Description                                                       |
 | ----------- | -------- | ----------------------------------------------------------------- |
@@ -113,6 +113,8 @@ Returns the user's connected social accounts. `instance_url` is non-null only fo
 | `text`      | `string` | Required. The post body. Char limit is enforced server-side per platform. |
 | `subreddit` | `string` | Required for Reddit accounts.                                     |
 | `title`     | `string` | Required for Reddit accounts.                                     |
+
+Both methods accept an optional `{ signal: AbortSignal }` argument to cancel an in-flight request.
 
 Returns `{ postId, platformPostId, webUrl }` — `postId` is crawlproof's row id (for later querying), `platformPostId` is whatever the target platform returned, `webUrl` is a permalink.
 

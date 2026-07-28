@@ -91,6 +91,40 @@ describe("createAutopostClient", () => {
     expect(stub.calls[0]!.url).toBe("https://example.test/api/sp/v1/accounts");
   });
 
+  it("forwards AbortSignal to requests", async () => {
+    const listStub = stubFetch({ body: { accounts: [] } });
+    const listClient = createAutopostClient({
+      token: "crp_t",
+      baseUrl: "https://example.test",
+      fetch: listStub.fetch,
+    });
+    const controller = new AbortController();
+
+    await listClient.listAccounts({ signal: controller.signal });
+
+    expect(listStub.calls[0]!.init?.signal).toBe(controller.signal);
+
+    const postStub = stubFetch({
+      body: {
+        post_id: "p-1",
+        platform_post_id: "x-1",
+        web_url: "https://x.com/1",
+      },
+    });
+    const postClient = createAutopostClient({
+      token: "crp_t",
+      baseUrl: "https://example.test",
+      fetch: postStub.fetch,
+    });
+
+    await postClient.post(
+      { accountId: "acc-1", text: "hi" },
+      { signal: controller.signal },
+    );
+
+    expect(postStub.calls[0]!.init?.signal).toBe(controller.signal);
+  });
+
   it("post() forwards reddit-only fields and renames keys to snake_case", async () => {
     const stub = stubFetch({
       body: {

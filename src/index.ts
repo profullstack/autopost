@@ -63,9 +63,13 @@ export interface PostResult {
   webUrl: string;
 }
 
+export interface RequestOptions {
+  signal?: AbortSignal;
+}
+
 export interface AutopostClient {
-  listAccounts(): Promise<SocialAccount[]>;
-  post(input: PostInput): Promise<PostResult>;
+  listAccounts(options?: RequestOptions): Promise<SocialAccount[]>;
+  post(input: PostInput, options?: RequestOptions): Promise<PostResult>;
 }
 
 export interface ClientOptions {
@@ -132,20 +136,24 @@ export function createAutopostClient(
   }
 
   return {
-    async listAccounts(): Promise<SocialAccount[]> {
+    async listAccounts(options?: RequestOptions): Promise<SocialAccount[]> {
       const r = await call<{ accounts: SocialAccount[] }>(
         "/api/sp/v1/accounts",
-        { method: "GET" },
+        { method: "GET", signal: options?.signal },
       );
       return r.accounts;
     },
-    async post(input: PostInput): Promise<PostResult> {
+    async post(
+      input: PostInput,
+      options?: RequestOptions,
+    ): Promise<PostResult> {
       const r = await call<{
         post_id: string;
         platform_post_id: string;
         web_url: string;
       }>("/api/sp/v1/posts", {
         method: "POST",
+        signal: options?.signal,
         body: JSON.stringify({
           account_id: input.accountId,
           text: input.text,
