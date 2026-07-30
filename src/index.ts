@@ -90,6 +90,22 @@ export class AutopostError extends Error {
   }
 }
 
+function getErrorMessage(
+  status: number,
+  statusText: string,
+  body: unknown,
+): string {
+  if (body && typeof body === "object") {
+    if ("error" in body) {
+      return String((body as { error: unknown }).error);
+    }
+    if ("message" in body) {
+      return String((body as { message: unknown }).message);
+    }
+  }
+  return `${status} ${statusText}`;
+}
+
 export function createAutopostClient(
   options: ClientOptions,
 ): AutopostClient {
@@ -122,10 +138,7 @@ export function createAutopostClient(
       // non-JSON response; fall through with body = null
     }
     if (!res.ok) {
-      const message =
-        body && typeof body === "object" && "error" in body
-          ? String((body as { error: unknown }).error)
-          : `${res.status} ${res.statusText}`;
+      const message = getErrorMessage(res.status, res.statusText, body);
       throw new AutopostError(res.status, message, body);
     }
     return body as T;
