@@ -162,4 +162,21 @@ describe("createAutopostClient", () => {
       message: "500 stub",
     });
   });
+
+  it("uses a JSON message field when the API error has no error field", async () => {
+    const stub = stubFetch({
+      status: 400,
+      ok: false,
+      body: { message: "Account is not connected." },
+    });
+    const client = createAutopostClient({
+      token: "crp_t",
+      baseUrl: "https://example.test",
+      fetch: stub.fetch,
+    });
+    await expect(client.listAccounts()).rejects.toMatchObject({
+      status: 400,
+      message: "Account is not connected.",
+    });
+  });
 });
