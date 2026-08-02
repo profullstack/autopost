@@ -116,7 +116,11 @@ export function createAutopostClient(
   if (!options.token) {
     throw new Error("autopost: token is required");
   }
-  const baseUrl = (options.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
+  const rawBaseUrl = options.baseUrl ?? DEFAULT_BASE_URL;
+  if (!/^https?:\/\//i.test(rawBaseUrl)) {
+    throw new Error("autopost: baseUrl must be an http(s) URL");
+  }
+  const baseUrl = rawBaseUrl.replace(/\/+$/, "");
   const fetchImpl = options.fetch ?? globalThis.fetch;
   if (typeof fetchImpl !== "function") {
     throw new Error(
@@ -127,14 +131,23 @@ export function createAutopostClient(
 
   async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
     const hasBody = init.body != null;
-    const res = await fetchImpl(`${baseUrl}${path}`, {
-      ...init,
-      headers: {
-        ...authHeader,
-        ...(hasBody ? { "content-type": "application/json" } : {}),
-        ...(init.headers ?? {}),
-      },
-    });
+    let res: Response;
+    try {
+      res = await fetchImpl(`${baseUrl}${path}`, {
+        ...init,
+        headers: {
+          ...authHeader,
+          ...(hasBody ? { "content-type": "application/json" } : {}),
+          ...(init.headers ?? {}),
+        },
+      });
+    } catch (cause) {
+      throw new AutopostError(
+        0,
+        `autopost: request failed: ${(cause as Error).message}`,
+        cause,
+      );
+    }
     let body: unknown = null;
     try {
       body = await res.json();
@@ -144,6 +157,13 @@ export function createAutopostClient(
     if (!res.ok) {
       const message = getErrorMessage(res.status, res.statusText, body);
       throw new AutopostError(res.status, message, body);
+    }
+    if (body == null || typeof body !== "object") {
+      throw new AutopostError(
+        res.status,
+        `autopost: unexpected ${res.status} response body`,
+        body,
+      );
     }
     return body as T;
   }
@@ -160,6 +180,9 @@ export function createAutopostClient(
       input: PostInput,
       options?: RequestOptions,
     ): Promise<PostResult> {
+      if (!input.accountId || typeof input.text !== "string" || !input.text) {
+        throw new Error("autopost: accountId and text are required");
+      }
       const r = await call<{
         post_id: string;
         platform_post_id: string;
